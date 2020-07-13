@@ -1,7 +1,6 @@
 import wave
 import asyncio
 import argparse
-import traceback
 import logging
 import datetime
 import concurrent.futures
@@ -48,7 +47,7 @@ def synthesize_stream(message, voice):
     p = pyaudio.PyAudio()
     stream = p.open(format=p.get_format_from_width(2),
                 channels=1,
-                rate=samplerate,# if voice.endswith('n') else 8000,
+                rate=samplerate,
                 output=True)
     stream.start_stream()
 
@@ -68,25 +67,19 @@ def synthesize_stream(message, voice):
                 sound.extend(message)
                 stream.write(message)
         except concurrent.futures.TimeoutError as e:
-            logger.info('WS Timeout - exiting')
-        except Exception as e:
+            logger.info('Websocket Timeout - exiting')
+        except Exception:
             logger.exception('Error during streaming synthesis')
         finally:
             stream.stop_stream()
             stream.close()
             p.terminate()
 
-            # output = wave.open(output_file, 'w')
-            # output.setparams((1, 2, samplerate, 0, 'NONE', 'not compressed'))
-            # output.writeframes(sound)
-            # output.close()
-
             with wave.open(output_file, 'wb') as wf:
                 wf.setnchannels(1)
                 wf.setsampwidth(2)
                 wf.setframerate(samplerate)
                 wf.writeframesraw(sound)
-
 
 
     async def synthesize(uri, data):
